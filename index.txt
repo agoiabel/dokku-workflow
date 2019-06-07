@@ -1,14 +1,15 @@
-//Ensure I put my ssh key into vultr when creating the new droplet and connect with while I login:
+//Ensure I put my ssh key into vultr when creating the new droplet and connect with it while I login:
 (https://www.vultr.com/docs/how-do-i-generate-ssh-keys#Connecting_to_a_server_using_an_SSH_key_from_a_Linux_client)
-
 
 //ssh into the server first then
 //Setup Swap File on Linux (https://www.vultr.com/docs/setup-swap-file-on-linux)
+
 
 //Install dokku (http://dokku.viewdocs.io/dokku/)
 wget https://raw.githubusercontent.com/dokku/dokku/v0.17.6/bootstrap.sh
 sudo DOKKU_TAG=v0.17.6 bash bootstrap.sh
 //go to your server's IP and follow the web installer
+
 
 //Server
 dokku apps:create 00-client
@@ -100,14 +101,19 @@ dokku letsencrypt api
 dokku letsencrypt 00-client
 
 
-#===========================
+#======================================================
 Run command within my laravel app
-#===========================
+#======================================================
 dokku enter api web
 
 Run the command e.g  
 php artisan db:seed
 
+
+
+#======================================================
+Connect to my remote mysql using sequel pro
+#======================================================
 
 //Expose mysql service
 dokku mysql:expose healthconnect
@@ -129,6 +135,7 @@ Version:             mysql:5.7.25
 
 
 Where: (prefix://username:passord@host:port/database_name)
+
 Name=any connection name
 Mysql Host=172.17.0.3 but 127.17.0.3
 Username=mysql
