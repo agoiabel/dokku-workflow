@@ -1,0 +1,143 @@
+//Ensure I put my ssh key into vultr when creating the new droplet and connect with while I login:
+(https://www.vultr.com/docs/how-do-i-generate-ssh-keys#Connecting_to_a_server_using_an_SSH_key_from_a_Linux_client)
+
+
+//ssh into the server first then
+//Setup Swap File on Linux (https://www.vultr.com/docs/setup-swap-file-on-linux)
+
+//Install dokku (http://dokku.viewdocs.io/dokku/)
+wget https://raw.githubusercontent.com/dokku/dokku/v0.17.6/bootstrap.sh
+sudo DOKKU_TAG=v0.17.6 bash bootstrap.sh
+//go to your server's IP and follow the web installer
+
+//Server
+dokku apps:create 00-client
+
+#===============
+Install react-app
+#===============
+
+//Local folder
+cd healthspecs-admin
+git remote -v
+git remote add dokku-production dokku@healthspecsng.com:00-client
+git remote -v   (confirm dokku add remote)
+
+
+git push dokku-production  (deploy to dokku)
+git push origin master (deploy to gitHub master)
+
+
+#===============
+Install laravel-app
+#==============
+
+//Server
+dokku apps:create api
+sudo dokku plugin:install https://github.com/dokku/dokku-mysql.git mysql
+dokku mysql:create health-connect
+dokku mysql:link healthconnect api
+
+dokku config:set api KEY="VAL\ WITH\ SPACES” KEY2=VAL key3=Val3
+(I have to set everything in my .env file like the format above)
+
+
+//Local
+cd healthspecs-api
+(Below is done because we changed .env session driver and queue to database)
+php artisan session:table
+php artisan queue:table
+
+git remote -v
+git remote add dokku-production dokku@healthspecsng.com:api
+git remote -v   (confirm dokku add remote)
+
+
+I need to update my composer.json to force the command below when instance restart
+
+"post-install-cmd": [
+    "php artisan migrate --force"
+],
+
+Like below within   
+
+"scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-install-cmd": [
+            "php artisan migrate --force"
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi"
+        ]
+}
+
+
+Delete package.json in larval root folder
+(since I am using for api only because package.json will not allow dock detect the application as a laravel app)
+
+
+Create a new file in the root of my laravel project named: Procfile with content below:
+web: vendor/bin/heroku-php-apache2 public/
+
+
+git push dokku-production
+//Server
+
+(To add www. to the client's domain)
+dokku domains:add 00-client www.healthspecsng.com
+ 
+///LETS ENCRYPT
+sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git
+ dokku config:set --global DOKKU_LETSENCRYPT_EMAIL=your@email.tld
+
+dokku letsencrypt api
+dokku letsencrypt 00-client
+
+
+#===========================
+Run command within my laravel app
+#===========================
+dokku enter api web
+
+Run the command e.g  
+php artisan db:seed
+
+
+//Expose mysql service
+dokku mysql:expose healthconnect
+dokku mysql:info healthconnect
+
+Will give below:
+
+Config dir:          /var/lib/dokku/services/mysql/healthconnect/config
+Data dir:            /var/lib/dokku/services/mysql/healthconnect/data
+Dsn:                 mysql://mysql:3ccd38010622c066@dokku-mysql-healthconnect:3306/healthconnect
+
+Exposed ports:       3306->16356
+Id:                  1e1ae9f40d57dc04807197fa8fc0f8def9165d35f056921b2812d634e818b246
+Internal ip:         172.17.0.3
+Links:               api
+Service root:        /var/lib/dokku/services/mysql/healthconnect
+Status:              running
+Version:             mysql:5.7.25
+
+
+Where: (prefix://username:passord@host:port/database_name)
+Name=any connection name
+Mysql Host=172.17.0.3 but 127.17.0.3
+Username=mysql
+Password=3ccd38010622c066
+Database=healthconnect
+port=16356
+SSH Host= my_server_ip
+SSH User= my_server_user(root)
+SSH Password
+
+
+
